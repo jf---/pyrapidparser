@@ -1,0 +1,5 @@
+MODULE syun1 
+	LOCAL RECORD prova
+		RECORD num usecount
+	ENDRECORD
+ENDMODULE

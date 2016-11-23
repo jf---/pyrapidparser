@@ -1,0 +1,757 @@
+MODULE SYSTEMMODULE(SYSMODULE)
+
+    ! TYPE DEFINITION
+    ALIAS num identno;
+    ALIAS num stoppoint;
+    ALIAS num opnum;
+    
+    RECORD stoppointdatainpos
+     num position;
+     num speed;
+     num mintime;
+     num maxtime;
+    ENDRECORD
+    
+    RECORD stoppointdata
+     stoppoint type;
+     bool progsynch;
+     stoppointdatainpos inpos;
+     num stoptime;
+     num followtime;
+     string signal;
+     opnum relation;
+     num checkvalue;
+    ENDRECORD
+    
+    
+    ! PROCEDURE DEFINITION
+
+    ! from: 3HAC16581-1_revK_en
+    !
+    
+    !CJointT
+    !StopMove; 
+    !ClearPath
+    !StartMove
+    !WaitTestAndSet
+    
+    FUNC bool IsStopMoveAct(\switch FromMoveTask | switch FromNonMoveTask)
+        !to be implemented
+        !
+        RETURN TRUE;
+    ENDFUNC
+    
+    PROC SkipWarn()
+    ENDPROC
+    
+    PROC ExitCycle()
+        !python:import sys
+        !python:print "Exit for ExitCycle"
+        !python:sys.exit(0)
+    ENDPROC
+    
+    PROC ErrWrite ( \switch W | switch I, string Header, string Reason, \string RL2, \string RL3, \string RL4)
+        !python:Header = pyrapid.Symbols().GetSymbol("Header").data.Get()
+        !python:Reason = pyrapid.Symbols().GetSymbol("Reason").data.Get()
+        IF Present(W) THEN
+            !python:print( "Warning" )
+        ENDIF
+        IF Present(I) THEN
+            !python:print( "Information" )
+        ENDIF
+        !python:print( "Header: %s, Reason: %s"%(Header, Reason) )
+        
+        IF Present(RL2) THEN
+            !python:RL2 = pyrapid.Symbols().GetSymbol("RL2").data.Get()
+            !python:print( RL2 )
+        ENDIF
+        
+        IF Present(RL3) THEN
+            !python:RL3 = pyrapid.Symbols().GetSymbol("RL3").data.Get()
+            !python:print( RL3 )
+        ENDIF
+        
+        IF Present(RL4) THEN
+            !python:RL4 = pyrapid.Symbols().GetSymbol("RL4").data.Get()
+            !python:print( RL4 )
+        ENDIF
+            
+    ENDPROC
+    
+    
+    PROC ClearRawBytes (VAR rawbytes RawData \num FromIndex)
+        !python:FromIndex = 1
+        IF Present(FromIndex) THEN
+            !python:FromIndex = pyrapid.Symbols().GetSymbol("FromIndex").data.Get()
+        ENDIF
+        !python:FromIndex -= 1 
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data
+        !python:RawData.Set( RawData.Get()[:FromIndex] )
+    ENDPROC
+    
+    PROC CopyRawBytes (rawbytes FromRawData, num FromIndex, VAR rawbytes ToRawData, num ToIndex \num NoOfBytes)
+    ENDPROC
+    
+    PROC PackRawBytes (anytype Value, VAR rawbytes RawData \switch Network, num StartIndex \switch Hex1 | num IntX | switch Float4 | switch ASCII)
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
+        !python:Value = pyrapid.Symbols().GetSymbol("Value").data
+        !python:StartIndex = pyrapid.Symbols().GetSymbol("StartIndex").data.Get()
+        !python:StartIndex -= 1
+        !python:import struct
+        !python:endian = '<'
+        !\Network   -> BigEndian
+        IF Present(Network) THEN
+            !python:endian = '>'
+        ENDIF
+        IF Present(Hex1) THEN
+            !python:if isinstance(Value, pyrapid.rapid_byte):
+            !python:    Value = Value.Get()
+            !python:    app=struct.pack(endian+"B", Value)
+            !python:    RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
+            !python:else:
+            !python:    raise Exception('type not valid')
+        ELSEIF Present(IntX) THEN
+            !python:IntX = pyrapid.Symbols().GetSymbol("IntX").data.Get()
+            
+            !python:USINT = pyrapid.Symbols().GetSymbol("USINT").data.Get()
+            !python:UINT = pyrapid.Symbols().GetSymbol("UINT").data.Get()
+            !python:UDINT = pyrapid.Symbols().GetSymbol("UDINT").data.Get()
+            !python:ULINT = pyrapid.Symbols().GetSymbol("ULINT").data.Get()
+            !python:SINT = pyrapid.Symbols().GetSymbol("SINT").data.Get()
+            !python:INT = pyrapid.Symbols().GetSymbol("INT").data.Get()
+            !python:DINT = pyrapid.Symbols().GetSymbol("DINT").data.Get()
+            !python:LINT = pyrapid.Symbols().GetSymbol("LINT").data.Get()
+            
+            !python:Value = long( Value.Get() )
+            
+            !python:if IntX==USINT:
+            !python:    app=struct.pack(endian+"B", Value)
+            !python:elif IntX==UINT:
+            !python:    app=struct.pack(endian+"H", Value)
+            !python:elif IntX==UDINT:
+            !python:    app=struct.pack(endian+"I", Value)
+            !python:elif IntX==ULINT:
+            !python:    app=struct.pack(endian+"Q", Value)
+            !python:elif IntX==SINT:
+            !python:    app=struct.pack(endian+"b", Value)
+            !python:elif IntX==INT:
+            !python:    app=struct.pack(endian+"h", Value)
+            !python:elif IntX==DINT:
+            !python:    app=struct.pack(endian+"i", Value)
+            !python:elif IntX==LINT:
+            !python:    app=struct.pack(endian+"q", Value)
+            !python:RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
+            
+        ELSEIF Present(Float4) THEN
+            !python:Value = float(Value.Get())
+            !python:app=struct.pack(endian+"f", Value)
+            !python:RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
+
+        ELSEIF Present(ASCII) THEN
+            !python:if isinstance(Value, pyrapid.rapid_byte):
+            !python:    Value = Value.Get()
+            !python:    app=struct.pack(endian+"b", Value)
+            !python:    RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
+            !python:else:
+            !python:    Value = Value.Get()
+            !python:    len_Value = len(Value)
+            !python:    app=struct.pack(endian+"%ds"%(len_Value,), Value)
+            !python:    RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
+       ENDIF
+        
+        !python:pyrapid.Symbols().GetSymbol("RawData").data.Set(RawData)
+        
+    ENDPROC
+    
+    PROC UnPackRawBytes (VAR rawbytes RawData \switch Network, num StartIndex, VAR anytype Value \switch Hex1 | num IntX | switch Float4 | num ASCII)
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
+        !python:StartIndex = pyrapid.Symbols().GetSymbol("StartIndex").data.Get()
+        !python:StartIndex -= 1
+        !python:import struct
+        !python:endian = '<'
+        !\Network   -> BigEndian
+        IF Present(Network) THEN
+            !python:endian = '>'
+        ENDIF
+        IF Present(Hex1) THEN
+            !python:if isinstance(Value, pyrapid.rapid_byte):
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"B")]
+            !python:    Value, = struct.unpack(endian+"B", RawData)
+            !python:else:
+            !python:    raise Exception('type not valid')
+        ELSEIF Present(IntX) THEN
+            !python:IntX = pyrapid.Symbols().GetSymbol("IntX").data.Get()
+            
+            !python:USINT = pyrapid.Symbols().GetSymbol("USINT").data.Get()
+            !python:UINT = pyrapid.Symbols().GetSymbol("UINT").data.Get()
+            !python:UDINT = pyrapid.Symbols().GetSymbol("UDINT").data.Get()
+            !python:ULINT = pyrapid.Symbols().GetSymbol("ULINT").data.Get()
+            !python:SINT = pyrapid.Symbols().GetSymbol("SINT").data.Get()
+            !python:INT = pyrapid.Symbols().GetSymbol("INT").data.Get()
+            !python:DINT = pyrapid.Symbols().GetSymbol("DINT").data.Get()
+            !python:LINT = pyrapid.Symbols().GetSymbol("LINT").data.Get()
+            
+            !python:if IntX==USINT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"B")]
+            !python:    Value, = struct.unpack(endian+"B", RawData)
+            !python:elif IntX==UINT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"H")]
+            !python:    Value, = struct.unpack(endian+"H", RawData)
+            !python:elif IntX==UDINT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"I")]
+            !python:    Value, = struct.unpack_from(endian+"I", RawData)
+            !python:elif IntX==ULINT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"Q")]
+            !python:    Value, = struct.unpack_from(endian+"Q", RawData)
+            !python:elif IntX==SINT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"b")]
+            !python:    Value, = struct.unpack(endian+"b", RawData)
+            !python:elif IntX==INT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"h")]
+            !python:    Value, = struct.unpack(endian+"h", RawData)
+            !python:elif IntX==DINT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"i")]
+            !python:    Value, = struct.unpack(endian+"i", RawData)
+            !python:elif IntX==LINT:
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"q")]
+            !python:    Value, = struct.unpack(endian+"q", RawData)
+            
+        ELSEIF Present(Float4) THEN
+            !python:RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"f")]
+            !python:Value, = struct.unpack(endian+"f", RawData)
+        ELSEIF Present(ASCII) THEN
+            !python:if isinstance(pyrapid.Symbols().GetSymbol("Value").data, pyrapid.rapid_byte):
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"b")]
+            !python:    Value, = struct.unpack(endian+"b", RawData)
+            !python:else:
+            !python:    ASCII = pyrapid.Symbols().GetSymbol("ASCII").data.Get()
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"%ds"%(ASCII,))]
+            !python:    Value, = struct.unpack(endian+"%ds"%(ASCII,), RawData)
+        ENDIF
+        
+        !python:pyrapid.Symbols().GetSymbol("Value").data.Set(Value)
+    ENDPROC 
+    
+    ! PackDNHeader Service Path RawData
+    ! RawBytesLen (RawData)
+    FUNC num RawBytesLen(VAR rawbytes RawData)
+        LOCAL VAR num ret;
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(len(RawData))
+        RETURN ret;
+    ENDFUNC
+    
+
+    FUNC string GetSysInfo( \switch SerialNo | switch SWVersion | switch RobotType | switch CtrlId | switch LanIp | switch CtrlLang)
+        LOCAL VAR string ret;
+        IF Present(LanIp) THEN
+            !python:pyrapid.Symbols().GetSymbol("ret").data.Set("0.0.0.0")
+        ENDIF
+        RETURN ret;
+    ENDFUNC
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SOCKET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    FUNC socketstatus SocketGetStatus( socketdev Socket )
+        LOCAL VAR socketstatus ret;
+        !python:import socket
+        !python:lstate, lsocket = pyrapid.Symbols().GetSymbol("Socket").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(lstate)
+        RETURN ret;
+    ENDFUNC
+    
+    PROC SocketCreate( VAR socketdev Socket )
+        !python:import socket
+        !python:SOCKET_CREATED = pyrapid.Symbols().GetSymbol("SOCKET_CREATED").data.Get()
+        !python:s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        !python:pyrapid.Symbols().GetSymbol("Socket").data.Set( (SOCKET_CREATED, s) )
+    ENDPROC
+    
+    PROC SocketClose( VAR socketdev Socket )
+        !python:import socket
+        !python:SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
+        !python:state,s = pyrapid.Symbols().GetSymbol("Socket").data.Get()
+        !python:s.close()
+        !python:pyrapid.Symbols().GetSymbol("Socket").data.Set( (SOCKET_CLOSED, None) )
+    ENDPROC
+    
+    PROC SocketAccept(VAR socketdev Socket, VAR socketdev ClientSocket  \VAR string ClientAddress \num Time)
+        !Socket
+        !The server socket that are waiting for incoming connections. The socket must
+        !already be created, bounded and ready for listen.
+        !ClientSocket
+        !The returned new client socket, that will be updated with the accepted incoming
+        !connection request.
+        !ClientAddress
+        !The variable that will be updated with the IP-address of the accepted incoming
+        !connection request.
+        !Time
+        !The maximum amount of time [s] that program execution waits for incoming
+        !connections. If this time runs out before any incoming connection, the error 
+        !handler will be called, if there is one, with the error code ERR_SOCK_TIMEOUT.
+        !If there is no error handler, the execution will be stopped.
+        !If parameter Time is not used, the waiting time is 60 s.
+        !
+        !Exception: ERR_SOCK_TIMEOUT
+        !
+        !python:import socket
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:ClientSocket = pyrapid.Symbols().GetSymbol("ClientSocket").data
+        
+        !python:s = Socket.Get()[1]
+        !python:Time = None
+        IF Present(Time) THEN
+            IF Time<>WAIT_MAX THEN
+                !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            ENDIF
+        ENDIF
+        !python:s.settimeout(Time)
+        
+        !python:try:
+        !python:        sc, address = s.accept()
+        !python:except socket.timeout:
+        !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "accept timeout: SocketAccept(%d) -"%(pyrapid.lineno(),))
+        
+        !python:SOCKET_CONNECTED = pyrapid.Symbols().GetSymbol("SOCKET_CONNECTED").data.Get()
+        !python:ClientSocket.Set( (SOCKET_CONNECTED, sc) )
+        
+        !python:ClientAddress = None
+        IF Present(ClientAddress) THEN
+            !python:ClientAddress = pyrapid.Symbols().GetSymbol("ClientAddress").data
+            !python:ClientAddress.Set(address[0])
+        ENDIF
+        
+    ENDPROC
+    
+    PROC SocketBind(VAR socketdev Socket, string LocalAddress, num LocalPort)
+        !python:import socket
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:LocalAddress = pyrapid.Symbols().GetSymbol("LocalAddress").data.Get()
+        !python:LocalPort = pyrapid.Symbols().GetSymbol("LocalPort").data.Get()
+        !python:s = Socket.Get()[1]
+        !python:s.settimeout(None)
+        !python:s.bind( (LocalAddress, LocalPort) )
+        !python:SOCKET_BOUND = pyrapid.Symbols().GetSymbol("SOCKET_BOUND").data.Get()
+        !python:Socket.Set( (SOCKET_BOUND, s) )
+    ENDPROC
+    
+    PROC SocketConnect(VAR socketdev Socket, string Address, num Port \num Time)
+        !Exception: ERR_SOCK_CLOSED 
+        !Exception: ERR_SOCK_ISCON 
+        !Exception: ERR_SOCK_CONNREF 
+        !Exception: ERR_SOCK_TIMEOUT 
+        
+        IF SocketGetStatus(Socket) = SOCKET_CONNECTED THEN
+            RAISE ERR_SOCK_ISCON;
+        ENDIF
+        IF SocketGetStatus(Socket) = SOCKET_CLOSED THEN
+            RAISE ERR_SOCK_CLOSED;
+        ENDIF
+        !python:import socket
+        !python:SOCKET_CONNECTED = pyrapid.Symbols().GetSymbol("SOCKET_CONNECTED").data.Get()
+        
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:Address = pyrapid.Symbols().GetSymbol("Address").data.Get()
+        !python:Port = pyrapid.Symbols().GetSymbol("Port").data.Get()
+        !python:s = Socket.Get()[1]
+        !python:if s is None:
+        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "strang error: SocketConnect(%d) -"%(pyrapid.lineno(),))
+        
+        !python:Time = None
+        IF Present(Time) THEN
+            IF Time<>WAIT_MAX THEN
+                !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            ENDIF
+        ENDIF
+        !python:s.settimeout(Time)
+        
+        !python:try:
+        !python:        s.connect( (Address, Port) )
+        !python:except socket.error:
+        !python:        ERR_SOCK_CONNREF = pyrapid.Symbols().GetSymbol("ERR_SOCK_CONNREF").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CONNREF, "connection refused: SocketConnect(%d) -"%(pyrapid.lineno(),))
+        !python:except socket.timeout:
+        !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "connection timeout: SocketConnect(%d) -"%(pyrapid.lineno(),))
+        
+        !python:Socket.Set( (SOCKET_CONNECTED, s) )
+    ENDPROC
+    
+    PROC SocketListen(VAR socketdev Socket)
+        !python:import socket
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:s = Socket.Get()[1]
+        !python:s.listen( 1 )
+        !python:SOCKET_LISTENING = pyrapid.Symbols().GetSymbol("SOCKET_LISTENING").data.Get()
+        !python:Socket.Set( (SOCKET_LISTENING, s) )
+    ENDPROC
+    
+    PROC SocketReceive(VAR socketdev Socket \ VAR string Str | VAR rawbytes RawData | VAR byte Data{*} \num Time)
+        !Exception: ERR_SOCK_CLOSED 
+        !Exception: ERR_SOCK_TIMEOUT 
+        !python:import socket
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:s = Socket.Get()[1]
+        
+        !python:Time = None
+        IF Present(Time) THEN
+            IF Time<>WAIT_MAX THEN
+                !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            ENDIF
+        ENDIF
+        !python:s.settimeout(Time)
+        
+        !python:try:
+        !python:    data = s.recv(1024)
+        !python:except socket.error:
+        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
+        !python:        #SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
+        !python:        #Socket.Set((SOCKET_CLOSED, None))
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "socket error: SocketReceive(%d) -"%(pyrapid.lineno(),))
+        !python:except socket.timeout:
+        !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "socket read timeout: SocketReceive(%d) -"%(pyrapid.lineno(),))
+        IF Present(Str) THEN
+            !python:pyrapid.Symbols().GetSymbol("Str").data.Set(data)
+        ENDIF
+    ENDPROC
+    
+    PROC SocketSend(VAR socketdev Socket \string Str | VAR rawbytes RawData | byte Data{*} \num NoOfBytes)
+        !Exception: ERR_SOCK_CLOSED 
+        !The size of the data to send is limited to 1024 bytes.
+        !python:import socket
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:s = Socket.Get()[1]
+        IF Present(Str) THEN
+            !python:data =  pyrapid.Symbols().GetSymbol("Str").data.Get()
+        ENDIF
+        !python:try:
+        !python:        s.send(data)
+        !python:except socket.error:
+        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
+        !python:        #SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
+        !python:        #Socket.Set((SOCKET_CLOSED, None))
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "socket error: SocketSend(%d) -"%(pyrapid.lineno(),))
+    ENDPROC
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    PROC WaitTime(\switch InPos, num Time)
+        !python:import time
+        !python:time.sleep(pyrapid.Symbols().GetSymbol("Time").data.Get())
+    ENDPROC
+    
+    PROC TPWrite ( string String \ num Num | bool Bool | pos Pos | orient Orient )
+        !python:val = pyrapid.Symbols().GetSymbol("String").data.Get()
+        
+        IF Present(Num) THEN
+            !python:val = val + " Num: " + str(pyrapid.Symbols().GetSymbol("Num").data.Get())
+        ELSEIF Present(Bool) THEN
+            !python:val = val + " Bool: " + str(pyrapid.Symbols().GetSymbol("Bool").data.Get())
+        ELSEIF Present(Pos) THEN
+            !python:val = val + " Pos: " + ",".join([ str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("x").Get()), 
+            !python:                                 str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("y").Get()), 
+            !python:                                 str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("z").Get())])
+        ELSEIF Present(Orient) THEN
+            !python:val = val + " Orient: " + ",".join([ str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q1").Get()), 
+            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q2").Get()), 
+            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q3").Get()), 
+            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q4").Get())])
+        ENDIF
+        !python:print( "'"+val+"'" )
+    ENDPROC
+    
+    PROC ClkStart( INOUT clock Clock )
+        !python:import datetime
+        !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:val = (val[0], None, True)
+        !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
+    ENDPROC
+    
+    PROC ClkStop( INOUT clock Clock )
+        !python:import datetime
+        !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:val = (val[0], datetime.datetime.now(), False)
+        !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
+    ENDPROC
+    
+    PROC ClkReset( INOUT clock Clock )
+        !python:import datetime
+        !python:val = (datetime.datetime.now(), None, False)
+        !python:try:
+        !python:    val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:except:
+        !python:    pass
+        !python:val = (datetime.datetime.now(), val[1], val[2])
+        !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
+    ENDPROC
+    
+    FUNC num ClkRead( clock Clock )
+        LOCAL VAR num ret;
+        !python:import datetime
+        !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:starttime = datetime.datetime.now()
+        !python:stoptime = datetime.datetime.now()
+        !python:if not(val[0] is None):
+        !python:    starttime = val[0]
+        !python:if not(val[1] is None):
+        !python:    stoptime = val[1]
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( (stoptime-starttime).total_seconds() )
+        RETURN ret;
+    ENDFUNC
+    
+    PROC UnLoad( string FilePath )
+        LOCAL VAR bool ret;
+        TPWrite("UnLoad it is unsafe");
+        !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
+        !python:FilePath = FilePath.split('/')[-1].split('.')[0].upper()
+        !python:ret = pyrapid.Symbols().UnLoadModule(FilePath)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        IF ret = FALSE THEN
+            RAISE ERR_UNLOAD ;
+        ENDIF
+    ENDPROC
+    
+
+    PROC Load( \switch Dynamic, string FilePath \string File \switch CheckRef )
+        TPWrite("Load it is unsafe");
+        !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
+        !python:FilePath = FilePath.split('/')[-1].split('.')[0]
+        !python:import sys
+        !python:if sys.modules.has_key(FilePath):
+        !python:    reload(sys.modules[FilePath])
+        !python:else:
+        !python:    __import__(FilePath)
+    ENDPROC
+    
+    FUNC string NumToStr (num Val, num Dec \switch Exp)
+        VAR string ret;
+        !python:val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:dec = pyrapid.Symbols().GetSymbol("Dec").data.Get()
+        IF Present(Exp) THEN
+            !python:val=("{0:.%dE}"%(dec,)).format(val)
+        ELSE
+            !python:val=("{0:.%dF}"%(dec,)).format(val)
+        ENDIF
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    PROC Incr (INOUT num Name)
+        Name := Name + 1;
+    ENDPROC
+    
+    PROC Decr (INOUT num Name)
+        Name := Name - 1;
+    ENDPROC
+    
+    PROC Add (INOUT num Name, num AddDvalue)
+        Name := Name + AddDvalue;
+    ENDPROC
+    
+    !PROC Incr( \INOUT num Name | INOUT num Dname )
+    !    IF Present(Name) THEN
+    !        Name := Name + 1;
+    !    ENDIF
+    !    IF Present(Dname) THEN
+    !        Dname := Dname + 1;
+    !    ENDIF
+    !ENDPROC
+    
+    !PROC Decr( \INOUT num Name | INOUT num Dname )
+    !    IF Present(Name) THEN
+    !        Name := Name - 1;
+    !    ENDIF
+    !    IF Present(Dname) THEN
+    !        Dname := Dname - 1;
+    !    ENDIF
+    !ENDPROC
+    
+    !PROC Add( \INOUT num Name | INOUT num Dname, \num AddValue, | \num AddDvalue)
+    !    IF Present(Name) THEN
+    !        IF Present(AddValue) THEN
+    !            Name := Name + AddValue;
+    !        ENDIF
+    !        IF Present(AddDvalue) THEN
+    !            Name := Name + AddDvalue;
+    !        ENDIF
+    !    ENDIF
+    !    IF Present(Dname) THEN
+    !        IF Present(AddDvalue) THEN
+    !            Dname := Dname + AddDvalue;
+    !        ENDIF
+    !        IF Present(AddValue) THEN
+    !            Dname := Dname + AddValue;
+    !        ENDIF
+    !    ENDIF
+    !ENDPROC
+    
+    PROC TryInit (num DataObj)
+        !!!!!!!!!!!!!!!!!TODO
+    ENDPROC
+    
+    FUNC num Abs (num Value)
+        VAR num ret;
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = abs(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Round (num Value)
+        VAR num ret;
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = round(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Trunc (num Value)
+        VAR num ret;
+        !python:import math
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = math.floor(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Sqrt (num Value)
+        VAR num ret;
+        !python:import math
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = math.sqrt(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Exp (num Value)
+        VAR num ret;
+        !python:import math
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = math.exp(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Pow (num Base, num Exponent)
+        VAR num ret;
+        !TODO non gestito errore
+        !python:import math
+        !python:base = pyrapid.Symbols().GetSymbol("Base").data.Get()
+        !python:exponent = pyrapid.Symbols().GetSymbol("Exponent").data.Get()
+        !python:val = math.pow(base, exponent)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num StrMatch(string Str, num ChPos, string Pattern)
+        VAR num ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:ChPos = pyrapid.Symbols().GetSymbol("ChPos").data.Get() - 1
+        !python:Pattern = pyrapid.Symbols().GetSymbol("Pattern").data.Get()
+        !python:ret = Str.find(Pattern, ChPos)
+        !python:if ret<0:
+        !python:        ret = len(Str)
+        !python:ret += 1
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num StrLen(string Str)
+        VAR num ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( len(Str) )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num StrFind (string Str, num ChPos, string Set \switch NotInSet)
+        VAR num ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:ChPos = pyrapid.Symbols().GetSymbol("ChPos").data.Get()
+        !python:Set = pyrapid.Symbols().GetSymbol("Set").data.Get()
+        IF Present(NotInSet) THEN
+            !python:NotInSet=True
+        ELSE
+            !python:NotInSet=False
+        ENDIF
+        !python:ret = len(Str)+1
+        !python:for i in range(int(ChPos)-1,len(Str)):
+        !python:    if (Str[i] in Set) ^ NotInSet:
+        !python:        ret = i+1
+        !python:        break
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC string StrPart (string Str, num ChPos, num Len)
+        VAR string ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:ChPos = pyrapid.Symbols().GetSymbol("ChPos").data.Get()
+        !python:Len = pyrapid.Symbols().GetSymbol("Len").data.Get()
+        !python:ret = Str[(ChPos-1):(ChPos-1+Len)]
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC
+
+    FUNC string ValToStr (anytype Val)
+        VAR string ret;
+        !python:Val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( str(Val) )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC bool StrToVal (string Str, INOUT anytype Val)
+        VAR bool ret;
+        !python:from browse_rapid_ast import EvaluateRapidExpression
+        !python:import rapid_parser
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:try:
+        !python:    Val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:except:
+        !python:    Val = None
+        !python:try:
+        !python:    parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='constant_expression')
+        !python:    parser_ast = parser.parse(Str, "tmp", debuglevel=0)
+        !python:    compute = EvaluateRapidExpression("sys", "sys")
+        !python:    compute.visit(parser_ast)
+        !python:    Val = compute.return_value
+        !python:    ret = True
+        !python:    pyrapid.Symbols().GetSymbol("Val").data.Set( Val )
+        !python:except:
+        !python:    #import traceback
+        !python:    #print traceback.format_exc()
+        !python:    ret = False
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC 
+
+!! Move Instruction
+
+ ! MoveL
+ !PROC MoveL ( \switch Conc, robtarget ToPoint \identno ID, speeddata Speed \num V | num T, zonedata Zone \num Z \stoppointdata Inpos, tooldata Tool \wobjdata WObj \switch Corr)
+ PROC MoveL ( robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool)
+  !python:print("--------- MOVEL ------------")
+ ENDPROC
+ 
+! MoveC
+! MoveJ
+
+! MoveAbsJ
+! MoveExtB
+! MoveCDO
+! MoveJDO
+! MoveLDO
+! MoveCSync
+! MoveJSync
+! MoveLSync
+
+PROC ConfJ(\switch On | switch Off)
+ENDPROC
+
+PROC ConfL(\switch On | switch Off)
+ENDPROC
+
+    
+ENDMODULE
