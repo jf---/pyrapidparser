@@ -7,7 +7,7 @@ _dir = os.path.dirname(__file__)
 
 setup(
     name='pyrapidparser',
-    version='0.1.0',
+    version='0.1.1',
     author='Michele Dionisio',
     author_email='michele.dionisio@gmail.com',
     url='https://github.com/jf---/pyrapidparser',
